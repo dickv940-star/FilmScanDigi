@@ -1,178 +1,361 @@
 /*
-===========================================
+=========================================================
 KliseApp
-Viewer Engine v1.0
-Canvas Viewer
-===========================================
+Viewer Engine V3
+=========================================================
 */
 
 "use strict";
 
-const Viewer = {
+class Viewer {
 
-    canvas: null,
-    ctx: null,
-
-    image: null,
-
-    zoom: 1,
-    minZoom: 0.1,
-    maxZoom: 5,
-
-    offsetX: 0,
-    offsetY: 0,
-
-    dragging: false,
-    lastX: 0,
-    lastY: 0,
-
-    init(canvas) {
+    constructor(canvas) {
 
         this.canvas = canvas;
-        this.ctx = canvas.getContext("2d", {
-            willReadFrequently: true
-        });
 
-        this.registerEvents();
+        this.ctx = canvas.getContext("2d");
 
-    },
+        this.image = null;
 
-    registerEvents() {
+        this.scale = 1;
 
-        this.canvas.addEventListener("wheel", e => {
+        this.minScale = 0.2;
 
-            e.preventDefault();
+        this.maxScale = 10;
 
-            const delta = e.deltaY < 0 ? 1.1 : 0.9;
+        this.offsetX = 0;
 
-            this.zoom *= delta;
+        this.offsetY = 0;
 
-            this.zoom = Math.max(
-                this.minZoom,
-                Math.min(this.maxZoom, this.zoom)
-            );
+        this.dragging = false;
 
-            this.render();
+        this.lastX = 0;
 
-        });
+        this.lastY = 0;
 
-        this.canvas.addEventListener("mousedown", e => {
+    }
 
-            this.dragging = true;
+    /*
+    ===================================
+    LOAD IMAGE
+    ===================================
+    */
 
-            this.lastX = e.offsetX;
-            this.lastY = e.offsetY;
+    load(file) {
 
-        });
+        return new Promise((resolve) => {
 
-        window.addEventListener("mouseup", () => {
+            const img = new Image();
 
-            this.dragging = false;
+            img.onload = () => {
 
-        });
+                this.image = img;
 
-        this.canvas.addEventListener("mousemove", e => {
+                this.fit();
 
-            if (!this.dragging) return;
+                resolve();
 
-            this.offsetX += e.offsetX - this.lastX;
-            this.offsetY += e.offsetY - this.lastY;
+            };
 
-            this.lastX = e.offsetX;
-            this.lastY = e.offsetY;
-
-            this.render();
+            img.src =
+                URL.createObjectURL(file);
 
         });
 
-    },
+    }
 
-    load(img) {
-
-        this.image = img;
-
-        this.fit();
-
-    },
+    /*
+    ===================================
+    FIT SCREEN
+    ===================================
+    */
 
     fit() {
 
-        if (!this.image) return;
+        if (!this.image)
+            return;
 
-        const scaleX = this.canvas.width / this.image.width;
-        const scaleY = this.canvas.height / this.image.height;
+        const sx =
+            this.canvas.width /
+            this.image.width;
 
-        this.zoom = Math.min(scaleX, scaleY);
+        const sy =
+            this.canvas.height /
+            this.image.height;
 
-        this.offsetX = (this.canvas.width - this.image.width * this.zoom) / 2;
-        this.offsetY = (this.canvas.height - this.image.height * this.zoom) / 2;
+        this.scale =
+            Math.min(sx, sy);
+
+        this.offsetX =
+            (this.canvas.width -
+                this.image.width *
+                this.scale) / 2;
+
+        this.offsetY =
+            (this.canvas.height -
+                this.image.height *
+                this.scale) / 2;
 
         this.render();
 
-    },
+    }
 
-    reset() {
-
-        this.zoom = 1;
-        this.offsetX = 0;
-        this.offsetY = 0;
-
-        this.fit();
-
-    },
+    /*
+    ===================================
+    RENDER
+    ===================================
+    */
 
     render() {
 
+        if (!this.image)
+            return;
+
+        const ctx = this.ctx;
+
+        ctx.clearRect(
+            0,
+            0,
+            this.canvas.width,
+            this.canvas.height
+        );
+
+        ctx.drawImage(
+
+            this.image,
+
+            this.offsetX,
+
+            this.offsetY,
+
+            this.image.width *
+            this.scale,
+
+            this.image.height *
+            this.scale
+
+        );
+
+    }
+        /*
+    ===================================
+    ZOOM
+    ===================================
+    */
+
+    zoom(factor, centerX = null, centerY = null) {
+
         if (!this.image) return;
 
-        this.ctx.clearRect(
-            0,
-            0,
-            this.canvas.width,
-            this.canvas.height
+        if (centerX === null)
+            centerX = this.canvas.width / 2;
+
+        if (centerY === null)
+            centerY = this.canvas.height / 2;
+
+        const oldScale = this.scale;
+
+        this.scale *= factor;
+
+        this.scale = Math.max(
+            this.minScale,
+            Math.min(this.maxScale, this.scale)
         );
 
-        this.ctx.save();
+        const ratio = this.scale / oldScale;
 
-        this.ctx.translate(
-            this.offsetX,
-            this.offsetY
+        this.offsetX =
+            centerX -
+            (centerX - this.offsetX) * ratio;
+
+        this.offsetY =
+            centerY -
+            (centerY - this.offsetY) * ratio;
+
+        this.render();
+
+    }
+
+    /*
+    ===================================
+    RESET VIEW
+    ===================================
+    */
+
+    reset() {
+
+        this.fit();
+
+    }
+
+    /*
+    ===================================
+    PAN
+    ===================================
+    */
+
+    startPan(x, y) {
+
+        this.dragging = true;
+
+        this.lastX = x;
+
+        this.lastY = y;
+
+    }
+
+    movePan(x, y) {
+
+        if (!this.dragging)
+            return;
+
+        this.offsetX +=
+            x - this.lastX;
+
+        this.offsetY +=
+            y - this.lastY;
+
+        this.lastX = x;
+
+        this.lastY = y;
+
+        this.render();
+
+    }
+
+    endPan() {
+
+        this.dragging = false;
+
+    }
+
+    /*
+    ===================================
+    MOUSE EVENTS
+    ===================================
+    */
+
+    attachEvents() {
+
+        this.canvas.addEventListener(
+
+            "wheel",
+
+            (e) => {
+
+                e.preventDefault();
+
+                const factor =
+                    e.deltaY < 0
+                    ? 1.10
+                    : 0.90;
+
+                this.zoom(
+
+                    factor,
+
+                    e.offsetX,
+
+                    e.offsetY
+
+                );
+
+            }
+
         );
 
-        this.ctx.scale(
-            this.zoom,
-            this.zoom
+        this.canvas.addEventListener(
+
+            "mousedown",
+
+            (e) => {
+
+                this.startPan(
+
+                    e.clientX,
+
+                    e.clientY
+
+                );
+
+            }
+
         );
 
-        this.ctx.drawImage(
-            this.image,
-            0,
-            0
+        window.addEventListener(
+
+            "mousemove",
+
+            (e) => {
+
+                this.movePan(
+
+                    e.clientX,
+
+                    e.clientY
+
+                );
+
+            }
+
         );
 
-        this.ctx.restore();
+        window.addEventListener(
 
-    },
+            "mouseup",
 
-    getImageData() {
+            () => {
 
-        return this.ctx.getImageData(
-            0,
-            0,
-            this.canvas.width,
-            this.canvas.height
+                this.endPan();
+
+            }
+
         );
 
-    },
+        this.canvas.addEventListener(
 
-    putImageData(imageData) {
+            "dblclick",
 
-        this.ctx.putImageData(
-            imageData,
-            0,
-            0
+            () => {
+
+                this.reset();
+
+            }
+
         );
 
     }
 
-};
+    /*
+    ===================================
+    IMAGE INFO
+    ===================================
+    */
+
+    getInfo() {
+
+        if (!this.image)
+            return null;
+
+        return {
+
+            width:
+                this.image.width,
+
+            height:
+                this.image.height,
+
+            zoom:
+                this.scale,
+
+            offsetX:
+                this.offsetX,
+
+            offsetY:
+                this.offsetY
+
+        };
+
+    }
+
+}
