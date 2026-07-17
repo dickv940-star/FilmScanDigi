@@ -1,252 +1,248 @@
 /*
-===========================================
+=========================================================
 KliseApp
-Application Controller v2.0
-===========================================
+Application Controller
+Version 3.0
+=========================================================
 */
 
 "use strict";
 
-const App = {
+class KliseApp {
 
-    canvas: null,
-    ctx: null,
-
-    image: null,
-
-    fileInput: null,
-    uploadBtn: null,
-    scanBtn: null,
-    saveBtn: null,
-    status: null,
-
-    init() {
-
-        this.canvas = document.getElementById("canvas");
-        this.ctx = this.canvas.getContext("2d", {
-            willReadFrequently: true
-        });
-
-        this.fileInput = document.getElementById("fileInput");
-        this.uploadBtn = document.getElementById("uploadBtn");
-        this.scanBtn = document.getElementById("scanBtn");
-        this.saveBtn = document.getElementById("saveBtn");
-        this.status = document.getElementById("status");
-
-        this.registerEvents();
-
-        this.registerServiceWorker();
-
-        this.setStatus("Ready");
+    constructor() {
 
         console.log("KliseApp Started");
-    },
 
-    registerEvents() {
+        // Canvas
+        this.canvas =
+            document.getElementById("viewer");
 
-        this.uploadBtn.addEventListener("click", () => {
+        this.ctx =
+            this.canvas.getContext("2d");
 
-            this.fileInput.click();
+        // Input
+        this.fileInput =
+            document.getElementById("fileInput");
 
-        });
+        // Buttons
+        this.btnProcess =
+            document.getElementById("btnProcess");
 
-        this.fileInput.addEventListener("change", (e) => {
+        this.btnReset =
+            document.getElementById("btnReset");
 
-            if (!e.target.files.length) return;
+        this.btnJPEG =
+            document.getElementById("btnJPEG");
 
-            this.loadImage(e.target.files[0]);
+        this.btnPNG =
+            document.getElementById("btnPNG");
 
-        });
+        this.btnWEBP =
+            document.getElementById("btnWEBP");
 
-        this.scanBtn.addEventListener("click", () => {
+        // Engine
 
-            this.autoScan();
+        this.viewer =
+            new Viewer(this.canvas);
 
-        });
+        this.exporter =
+            new ExportEngine(this.canvas);
 
-        this.saveBtn.addEventListener("click", () => {
+        this.engine = null;
 
-            this.saveImage();
+        this.currentFile = null;
 
-        });
+        this.bindEvents();
 
-        window.addEventListener("resize", () => {
+        this.viewer.attachEvents();
 
-            this.redraw();
+    }
 
-        });
+    /*
+    ======================================
+    EVENTS
+    ======================================
+    */
 
-    },
+    bindEvents() {
 
-    loadImage(file) {
+        this.fileInput.addEventListener(
 
-        this.setStatus("Loading image...");
+            "change",
 
-        const reader = new FileReader();
+            (e)=>{
 
-        reader.onload = (event) => {
+                if(e.target.files.length){
 
-            const img = new Image();
+                    this.openFile(
 
-            img.onload = () => {
+                        e.target.files[0]
 
-                this.image = img;
+                    );
 
-                this.fitCanvas(img);
+                }
 
-                this.drawImage(img);
+            }
 
-                this.setStatus(
-                    img.width +
-                    " × " +
-                    img.height +
-                    " loaded"
-                );
-
-            };
-
-            img.src = event.target.result;
-
-        };
-
-        reader.readAsDataURL(file);
-
-    },
-
-    fitCanvas(img) {
-
-        const maxWidth = 820;
-
-        const scale = Math.min(
-            1,
-            maxWidth / img.width
         );
 
-        this.canvas.width = img.width * scale;
-        this.canvas.height = img.height * scale;
+        this.btnProcess?.addEventListener(
 
-    },
+            "click",
 
-    drawImage(img) {
+            ()=>{
 
-        this.ctx.clearRect(
-            0,
-            0,
-            this.canvas.width,
-            this.canvas.height
+                this.processImage();
+
+            }
+
         );
 
-        this.ctx.drawImage(
-            img,
-            0,
-            0,
-            this.canvas.width,
-            this.canvas.height
+        this.btnReset?.addEventListener(
+
+            "click",
+
+            ()=>{
+
+                this.reset();
+
+            }
+
         );
 
-    },
+        this.btnJPEG?.addEventListener(
 
-    redraw() {
+            "click",
 
-        if (!this.image) return;
+            ()=>{
 
-        this.fitCanvas(this.image);
+                this.exporter.export("jpeg");
 
-        this.drawImage(this.image);
+            }
 
-    },
+        );
 
-    autoScan() {
+        this.btnPNG?.addEventListener(
 
-        if (!this.image) {
+            "click",
 
-            alert("Upload a negative first.");
+            ()=>{
+
+                this.exporter.export("png");
+
+            }
+
+        );
+
+        this.btnWEBP?.addEventListener(
+
+            "click",
+
+            ()=>{
+
+                this.exporter.export("webp");
+
+            }
+
+        );
+
+    }
+
+    /*
+    ======================================
+    OPEN IMAGE
+    ======================================
+    */
+
+    async openFile(file){
+
+        this.currentFile = file;
+
+        await this.viewer.load(file);
+
+        console.log(
+
+            "Loaded",
+
+            file.name
+
+        );
+
+    }
+
+    /*
+    ======================================
+    PROCESS IMAGE
+    ======================================
+    */
+
+    processImage(){
+
+        if(!this.viewer.image){
+
+            alert("Pilih foto terlebih dahulu.");
 
             return;
 
         }
 
-        this.setStatus("Film Engine coming soon...");
+        this.engine =
 
-        console.log("AUTO SCAN");
+            new FilmEngine(
 
-        /*
-        Nanti akan memanggil:
+                this.canvas,
 
-        FilmEngine.process(
-            canvas,
-            context
+                this.ctx
+
+            );
+
+        this.engine.process();
+
+        console.log(
+
+            this.engine.getStatistics()
+
         );
 
-        */
+    }
 
-    },
+    /*
+    ======================================
+    RESET
+    ======================================
+    */
 
-    saveImage() {
+    reset(){
 
-        if (!this.image) return;
+        if(!this.currentFile)
 
-        this.setStatus("Saving...");
-
-        /*
-        export.js nanti
-        akan menangani proses export
-        */
-
-        const link = document.createElement("a");
-
-        link.download = "KliseApp.jpg";
-
-        link.href = this.canvas.toDataURL(
-            "image/jpeg",
-            0.98
-        );
-
-        link.click();
-
-        this.setStatus("JPEG saved");
-
-    },
-
-    setStatus(text) {
-
-        this.status.textContent = text;
-
-    },
-
-    registerServiceWorker() {
-
-        if (!("serviceWorker" in navigator))
             return;
 
-        window.addEventListener("load", () => {
+        this.openFile(
 
-            navigator.serviceWorker
-                .register("sw.js")
-                .then(() => {
+            this.currentFile
 
-                    console.log(
-                        "Service Worker Registered"
-                    );
+        );
 
-                })
-                .catch((err) => {
+    }
+/*
+==========================================
+START
+==========================================
+*/
 
-                    console.error(err);
+window.addEventListener(
 
-                });
+    "load",
 
-        });
+    ()=>{
+
+        window.app =
+
+            new KliseApp();
 
     }
 
-};
-
-document.addEventListener(
-    "DOMContentLoaded",
-    () => {
-
-        App.init();
-
-    }
 );
+}
