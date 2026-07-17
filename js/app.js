@@ -242,7 +242,7 @@ window.addEventListener(
 
             new KliseApp();
 
-    }
+       }
 
 );
-
+}
