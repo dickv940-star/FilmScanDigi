@@ -1,0 +1,249 @@
+/* ===================================
+   KliseApp
+   Epson V370 Style Film Scanner
+   =================================== */
+
+:root{
+
+    --bg:#111111;
+    --card:#1b1b1b;
+    --border:#2b2b2b;
+
+    --green:#00b894;
+    --greenHover:#00a884;
+
+    --text:#ffffff;
+    --sub:#b8b8b8;
+
+    --radius:14px;
+
+}
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+
+    background:var(--bg);
+
+    color:var(--text);
+
+    font-family:
+    "Segoe UI",
+    Roboto,
+    Arial,
+    sans-serif;
+
+}
+
+.app{
+
+    max-width:900px;
+
+    margin:auto;
+
+    padding:25px;
+
+}
+
+.header{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:18px;
+
+    margin-bottom:30px;
+
+}
+
+.logo{
+
+    width:70px;
+
+    height:70px;
+
+    object-fit:contain;
+
+}
+
+.header h1{
+
+    font-size:32px;
+
+    font-weight:700;
+
+}
+
+.header p{
+
+    color:var(--sub);
+
+    margin-top:5px;
+
+}
+
+.upload-card,
+.viewer-card,
+.action-card,
+.status{
+
+    background:var(--card);
+
+    border:1px solid var(--border);
+
+    border-radius:var(--radius);
+
+    padding:20px;
+
+    margin-bottom:20px;
+
+}
+
+.viewer-card{
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    min-height:420px;
+
+}
+
+canvas{
+
+    width:100%;
+
+    max-width:820px;
+
+    border-radius:10px;
+
+    background:#000;
+
+    display:block;
+
+}
+
+.action-card{
+
+    display:flex;
+
+    gap:15px;
+
+    justify-content:center;
+
+    flex-wrap:wrap;
+
+}
+
+.btn{
+
+    cursor:pointer;
+
+    border:none;
+
+    border-radius:12px;
+
+    padding:15px 28px;
+
+    background:#333;
+
+    color:white;
+
+    font-size:16px;
+
+    transition:.25s;
+
+}
+
+.btn:hover{
+
+    transform:translateY(-2px);
+
+    background:#444;
+
+}
+
+.primary{
+
+    background:var(--green);
+
+}
+
+.primary:hover{
+
+    background:var(--greenHover);
+
+}
+
+.status{
+
+    text-align:center;
+
+    color:var(--sub);
+
+    font-size:15px;
+
+}
+
+footer{
+
+    text-align:center;
+
+    color:#777;
+
+    padding:25px;
+
+    font-size:14px;
+
+}
+
+/* Mobile */
+
+@media(max-width:700px){
+
+.header{
+
+    flex-direction:column;
+
+    text-align:center;
+
+}
+
+.header h1{
+
+    font-size:26px;
+
+}
+
+.logo{
+
+    width:60px;
+
+}
+
+.viewer-card{
+
+    min-height:300px;
+
+}
+
+.btn{
+
+    width:100%;
+
+}
+
+.action-card{
+
+    flex-direction:column;
+
+}
+
+}
