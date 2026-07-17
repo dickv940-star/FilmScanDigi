@@ -209,17 +209,19 @@ class KliseApp {
 
     } 
 
-    /*
+       /*
     ======================================
     RESET
     ======================================
     */
 
-    reset
+    reset(){
 
-        if(!this.currentFile)
+        if(!this.currentFile){
 
             return;
+
+        }
 
         this.openFile(
 
@@ -230,6 +232,8 @@ class KliseApp {
     }
 
 }
+
+
 /*
 ==========================================
 START
@@ -242,11 +246,8 @@ window.addEventListener(
 
     ()=>{
 
-        window.app =
+        window.app = new KliseApp();
 
-            new KliseApp();
-
-       }
+    }
 
 );
-}
