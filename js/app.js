@@ -215,7 +215,7 @@ class KliseApp {
     ======================================
     */
 
-    reset()
+    reset
 
         if(!this.currentFile)
 
