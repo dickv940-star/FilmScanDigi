@@ -928,3 +928,972 @@ class FilmEngine {
         });
 
     }
+    /*
+    =====================================================
+    WHITE BALANCE ENGINE
+    =====================================================
+    */
+
+    grayWorldWhiteBalance() {
+
+        console.log("Gray World White Balance");
+
+        const gain = this.calculateChannelGain();
+
+        this.forEachPixel((p, i) => {
+
+            p[i] = this.clamp(
+                p[i] * gain.r
+            );
+
+            p[i + 1] = this.clamp(
+                p[i + 1] * gain.g
+            );
+
+            p[i + 2] = this.clamp(
+                p[i + 2] * gain.b
+            );
+
+        });
+
+    }
+
+    calculateChannelGain() {
+
+        let totalR = 0;
+        let totalG = 0;
+        let totalB = 0;
+
+        const pixels = this.width * this.height;
+
+        this.forEachPixel((p, i) => {
+
+            totalR += p[i];
+            totalG += p[i + 1];
+            totalB += p[i + 2];
+
+        });
+
+        const avgR = totalR / pixels;
+        const avgG = totalG / pixels;
+        const avgB = totalB / pixels;
+
+        const gray =
+            (avgR + avgG + avgB) / 3;
+
+        return {
+
+            r: gray / Math.max(avgR, 1),
+
+            g: gray / Math.max(avgG, 1),
+
+            b: gray / Math.max(avgB, 1)
+
+        };
+
+    }
+
+    /*
+    =====================================================
+    AUTO EXPOSURE
+    =====================================================
+    */
+
+    autoExposure() {
+
+        console.log("Auto Exposure");
+
+        const average =
+            this.averageLuminance();
+
+        const target = 145;
+
+        const gain =
+            target /
+            Math.max(average, 1);
+
+        this.normalizeExposure(gain);
+
+    }
+
+    normalizeExposure(gain) {
+
+        this.forEachPixel((p, i) => {
+
+            p[i] = this.clamp(
+                p[i] * gain
+            );
+
+            p[i + 1] = this.clamp(
+                p[i + 1] * gain
+            );
+
+            p[i + 2] = this.clamp(
+                p[i + 2] * gain
+            );
+
+        });
+
+    }
+     /*
+    =====================================================
+    TONE CURVE ENGINE
+    =====================================================
+    */
+
+    applyToneCurve() {
+
+        console.log("Apply Tone Curve");
+
+        this.forEachPixel((p, i) => {
+
+            p[i]     = this.filmCurve(p[i]);
+            p[i + 1] = this.filmCurve(p[i + 1]);
+            p[i + 2] = this.filmCurve(p[i + 2]);
+
+        });
+
+    }
+
+    filmCurve(value) {
+
+        let x = value / 255;
+
+        /*
+        Soft Film Curve
+
+        Shadow sedikit diangkat
+        Midtone tetap natural
+        Highlight dilindungi
+        */
+
+        x = this.shadowLift(x);
+
+        x = this.highlightRollOff(x);
+
+        return this.clamp(
+            Math.round(x * 255)
+        );
+
+    }
+
+    /*
+    =====================================================
+    SHADOW LIFT
+    =====================================================
+    */
+
+    shadowLift(x) {
+
+        /*
+        Mengangkat shadow secara halus
+        agar tidak terlalu pekat.
+        */
+
+        if (x < 0.25) {
+
+            x =
+                x +
+                (0.25 - x) * 0.18;
+
+        }
+
+        return x;
+
+    }
+
+    /*
+    =====================================================
+    HIGHLIGHT ROLL OFF
+    =====================================================
+    */
+
+    highlightRollOff(x) {
+
+        /*
+        Menahan highlight agar
+        tidak cepat clipping.
+        */
+
+        if (x > 0.80) {
+
+            x =
+                0.80 +
+                (x - 0.80) * 0.60;
+
+        }
+
+        return Math.min(
+            1,
+            x
+        );
+
+    }
+
+    /*
+    =====================================================
+    GAMMA
+    =====================================================
+    */
+
+    applyGamma(gamma = 1.05) {
+
+        const inv =
+            1 / gamma;
+
+        this.forEachPixel((p, i) => {
+
+            p[i] = this.clamp(
+
+                Math.pow(
+                    p[i] / 255,
+                    inv
+                ) * 255
+
+            );
+
+            p[i + 1] = this.clamp(
+
+                Math.pow(
+                    p[i + 1] / 255,
+                    inv
+                ) * 255
+
+            );
+
+            p[i + 2] = this.clamp(
+
+                Math.pow(
+                    p[i + 2] / 255,
+                    inv
+                ) * 255
+
+            );
+
+        });
+
+    }
+     /*
+    =====================================================
+    NATURAL COLOR RECOVERY ENGINE
+    =====================================================
+    */
+
+    recoverNaturalColor() {
+
+        console.log("Natural Color Recovery");
+
+        this.forEachPixel((p, i) => {
+
+            const rgb = this.applyAdaptiveColor(
+
+                p[i],
+                p[i + 1],
+                p[i + 2]
+
+            );
+
+            p[i]     = rgb.r;
+            p[i + 1] = rgb.g;
+            p[i + 2] = rgb.b;
+
+        });
+
+    }
+
+    applyAdaptiveColor(r, g, b) {
+
+        const hsl = this.rgbToHsl(r, g, b);
+
+        let h = hsl.h;
+        let s = hsl.s;
+        let l = hsl.l;
+
+        s = this.skinToneRecovery(h, s, l);
+
+        s = this.skyRecovery(h, s, l);
+
+        s = this.greenRecovery(h, s, l);
+
+        const rgb = this.hslToRgb(
+            h,
+            s,
+            l
+        );
+
+        return {
+
+            r: this.clamp(rgb.r),
+
+            g: this.clamp(rgb.g),
+
+            b: this.clamp(rgb.b)
+
+        };
+
+    }
+
+    /*
+    =====================================================
+    SKIN
+    =====================================================
+    */
+
+    skinToneRecovery(h, s, l) {
+
+        if (
+            h >= 12 &&
+            h <= 38
+        ) {
+
+            const boost =
+                1.04 +
+                (l * 0.03);
+
+            s *= boost;
+
+        }
+
+        return Math.min(
+            s,
+            1
+        );
+
+    }
+
+    /*
+    =====================================================
+    SKY
+    =====================================================
+    */
+
+    skyRecovery(h, s, l) {
+
+        if (
+            h >= 185 &&
+            h <= 245
+        ) {
+
+            const boost =
+                1.05 +
+                (0.05 * l);
+
+            s *= boost;
+
+        }
+
+        return Math.min(
+            s,
+            1
+        );
+
+    }
+
+    /*
+    =====================================================
+    GREEN
+    =====================================================
+    */
+
+    greenRecovery(h, s, l) {
+
+        if (
+            h >= 70 &&
+            h <= 155
+        ) {
+
+            const boost =
+                1.03 +
+                (0.04 * l);
+
+            s *= boost;
+
+        }
+
+        return Math.min(
+            s,
+            1
+        );
+
+    }
+
+    /*
+    =====================================================
+    RGB → HSL
+    =====================================================
+    */
+
+    rgbToHsl(r, g, b) {
+
+        r /= 255;
+        g /= 255;
+        b /= 255;
+
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+
+        let h = 0;
+        let s = 0;
+
+        const l = (max + min) / 2;
+
+        if (max !== min) {
+
+            const d = max - min;
+
+            s =
+
+                l > 0.5
+
+                ? d / (2 - max - min)
+
+                : d / (max + min);
+
+            switch (max) {
+
+                case r:
+
+                    h =
+                        (g - b) / d +
+                        (g < b ? 6 : 0);
+
+                    break;
+
+                case g:
+
+                    h =
+                        (b - r) / d + 2;
+
+                    break;
+
+                default:
+
+                    h =
+                        (r - g) / d + 4;
+
+            }
+
+            h *= 60;
+
+        }
+
+        return {
+
+            h,
+            s,
+            l
+
+        };
+
+    }
+
+    /*
+    =====================================================
+    HSL → RGB
+    =====================================================
+    */
+
+    hslToRgb(h, s, l) {
+
+        h /= 360;
+
+        let r;
+        let g;
+        let b;
+
+        if (s === 0) {
+
+            r = g = b = l;
+
+        } else {
+
+            const hue2rgb = (p, q, t) => {
+
+                if (t < 0)
+                    t += 1;
+
+                if (t > 1)
+                    t -= 1;
+
+                if (t < 1 / 6)
+                    return p + (q - p) * 6 * t;
+
+                if (t < 1 / 2)
+                    return q;
+
+                if (t < 2 / 3)
+                    return p + (q - p) * (2 / 3 - t) * 6;
+
+                return p;
+
+            };
+
+            const q =
+
+                l < 0.5
+
+                ? l * (1 + s)
+
+                : l + s - l * s;
+
+            const p = 2 * l - q;
+
+            r = hue2rgb(
+                p,
+                q,
+                h + 1 / 3
+            );
+
+            g = hue2rgb(
+                p,
+                q,
+                h
+            );
+
+            b = hue2rgb(
+                p,
+                q,
+                h - 1 / 3
+            );
+
+        }
+
+        return {
+
+            r: Math.round(r * 255),
+
+            g: Math.round(g * 255),
+
+            b: Math.round(b * 255)
+
+        };
+
+    }
+     /*
+    =====================================================
+    EPSON V370 SCANNER PROFILE
+    =====================================================
+    */
+
+    applyEpsonProfile() {
+
+        console.log("Apply Epson V370 Profile");
+
+        this.applyColorMatrix();
+
+        this.applyMicroContrast();
+
+        this.applySaturation();
+
+    }
+
+    /*
+    =====================================================
+    COLOR MATRIX
+    =====================================================
+    */
+
+    applyColorMatrix() {
+
+        this.forEachPixel((p, i) => {
+
+            const r = p[i];
+            const g = p[i + 1];
+            const b = p[i + 2];
+
+            /*
+                Epson Style Matrix
+
+                Warna dibuat sedikit
+                lebih hangat tetapi tetap netral.
+            */
+
+            let nr =
+                r * 1.015 +
+                g * 0.010 -
+                b * 0.025;
+
+            let ng =
+                r * 0.005 +
+                g * 1.005 -
+                b * 0.010;
+
+            let nb =
+               -r * 0.010 +
+                g * 0.015 +
+                b * 0.995;
+
+            p[i]     = this.clamp(nr);
+            p[i + 1] = this.clamp(ng);
+            p[i + 2] = this.clamp(nb);
+
+        });
+
+    }
+
+    /*
+    =====================================================
+    MICRO CONTRAST
+    =====================================================
+    */
+
+    applyMicroContrast(amount = 1.04) {
+
+        this.forEachPixel((p, i) => {
+
+            p[i] = this.microContrast(
+                p[i],
+                amount
+            );
+
+            p[i + 1] = this.microContrast(
+                p[i + 1],
+                amount
+            );
+
+            p[i + 2] = this.microContrast(
+                p[i + 2],
+                amount
+            );
+
+        });
+
+    }
+
+    microContrast(value, amount) {
+
+        const center = 128;
+
+        let v =
+            center +
+            (value - center) * amount;
+
+        return this.clamp(v);
+
+    }
+
+    /*
+    =====================================================
+    SATURATION
+    =====================================================
+    */
+
+    applySaturation(amount = 1.06) {
+
+        this.forEachPixel((p, i) => {
+
+            const hsl =
+                this.rgbToHsl(
+                    p[i],
+                    p[i + 1],
+                    p[i + 2]
+                );
+
+            hsl.s *= amount;
+
+            if (hsl.s > 1)
+                hsl.s = 1;
+
+            const rgb =
+                this.hslToRgb(
+                    hsl.h,
+                    hsl.s,
+                    hsl.l
+                );
+
+            p[i]     = rgb.r;
+            p[i + 1] = rgb.g;
+            p[i + 2] = rgb.b;
+
+        });
+
+    }
+     /*
+    =====================================================
+    DETAIL ENGINE
+    Noise Reduction + Unsharp Mask
+    =====================================================
+    */
+
+    reduceNoise() {
+
+        console.log("Reduce Noise");
+
+        const source =
+            new Uint8ClampedArray(this.pixels);
+
+        const width = this.width;
+        const height = this.height;
+
+        const index = (x, y) =>
+            (y * width + x) * 4;
+
+        for (let y = 1; y < height - 1; y++) {
+
+            for (let x = 1; x < width - 1; x++) {
+
+                const c = index(x, y);
+
+                for (let channel = 0; channel < 3; channel++) {
+
+                    let sum = 0;
+
+                    let count = 0;
+
+                    for (let ky = -1; ky <= 1; ky++) {
+
+                        for (let kx = -1; kx <= 1; kx++) {
+
+                            const p =
+                                index(
+                                    x + kx,
+                                    y + ky
+                                );
+
+                            sum +=
+                                source[
+                                    p + channel
+                                ];
+
+                            count++;
+
+                        }
+
+                    }
+
+                    this.pixels[
+                        c + channel
+                    ] = this.clamp(
+
+                        sum / count
+
+                    );
+
+                }
+
+            }
+
+        }
+
+    }
+
+    /*
+    =====================================================
+    UNSHARP MASK
+    =====================================================
+    */
+
+    unsharpMask() {
+
+        console.log("Unsharp Mask");
+
+        const source =
+            new Uint8ClampedArray(this.pixels);
+
+        const width = this.width;
+        const height = this.height;
+
+        const amount = 0.45;
+
+        const index = (x, y) =>
+            (y * width + x) * 4;
+
+        for (let y = 1; y < height - 1; y++) {
+
+            for (let x = 1; x < width - 1; x++) {
+
+                const c = index(x, y);
+
+                for (let channel = 0; channel < 3; channel++) {
+
+                    const center =
+                        source[
+                            c + channel
+                        ];
+
+                    let blur = 0;
+
+                    let count = 0;
+
+                    for (let ky = -1; ky <= 1; ky++) {
+
+                        for (let kx = -1; kx <= 1; kx++) {
+
+                            blur +=
+
+                                source[
+                                    index(
+                                        x + kx,
+                                        y + ky
+                                    ) + channel
+                                ];
+
+                            count++;
+
+                        }
+
+                    }
+
+                    blur /= count;
+
+                    const sharpened =
+
+                        center +
+
+                        (center - blur) *
+
+                        amount;
+
+                    this.pixels[
+                        c + channel
+                    ] = this.clamp(
+
+                        sharpened
+
+                    );
+
+                }
+
+            }
+
+        }
+
+    }
+
+    /*
+    =====================================================
+    DETAIL INFORMATION
+    =====================================================
+    */
+
+    printDetailInfo() {
+
+        console.table({
+
+            NoiseReduction:
+
+                this.options.noiseReduction,
+
+            Sharpen:
+
+                this.options.sharpen,
+
+            Scanner:
+
+                this.profile
+
+        });
+
+    }
+     /*
+    =====================================================
+    JPEG OPTIMIZER
+    =====================================================
+    */
+
+    optimizeJPEG() {
+
+        console.log("Optimize JPEG");
+
+        this.applyBlackPoint(2);
+
+        this.applyWhitePoint(253);
+
+    }
+
+    /*
+    =====================================================
+    MEDIAN FILTER
+    =====================================================
+    */
+
+    medianFilter(values) {
+
+        values.sort((a, b) => a - b);
+
+        return values[
+            Math.floor(values.length / 2)
+        ];
+
+    }
+
+    /*
+    =====================================================
+    UTILITIES
+    =====================================================
+    */
+
+    copyPixels() {
+
+        return new Uint8ClampedArray(
+            this.pixels
+        );
+
+    }
+
+    resetImage() {
+
+        if (!this.originalData)
+            return;
+
+        this.pixels.set(
+            this.originalData
+        );
+
+    }
+
+    getStatistics() {
+
+        return {
+
+            width: this.width,
+
+            height: this.height,
+
+            profile: this.profile,
+
+            isNegative: this.isNegative,
+
+            orangeMask: this.orangeMaskStrength,
+
+            dynamicRange: this.dynamicRange,
+
+            histogram: this.histogram,
+
+            stats: this.stats
+
+        };
+
+    }
+
+    printEngineInfo() {
+
+        console.group("Film Engine");
+
+        console.table({
+
+            Profile:
+                this.profile,
+
+            Width:
+                this.width,
+
+            Height:
+                this.height,
+
+            Negative:
+                this.isNegative,
+
+            OrangeMask:
+                this.orangeMaskStrength,
+
+            DynamicRange:
+                this.dynamicRange
+
+        });
+
+        console.groupEnd();
+
+    }
+
+}
