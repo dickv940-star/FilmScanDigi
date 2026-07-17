@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<meta name="theme-color"
+content="#111111">
+
+<title>KliseApp</title>
+
+<link rel="manifest" href="manifest.json">
+
+<link rel="icon" href="assets/logo.png">
+
+<link rel="apple-touch-icon" href="assets/logo.png">
+
+<link rel="stylesheet" href="css/style.css">
+
+</head>
+
+<body>
+
+<div class="app">
+
+<header class="header">
+
+<img
+src="assets/logo.png"
+class="logo"
+alt="KliseApp">
+
+<div>
+
+<h1>KliseApp</h1>
+
+<p>Epson V370 Style Film Scanner</p>
+
+</div>
+
+</header>
+
+<main>
+
+<section class="upload-card">
+
+<input
+type="file"
+id="fileInput"
+accept="image/*"
+hidden>
+
+<button
+id="uploadBtn"
+class="btn">
+
+Upload Negative
+
+</button>
+
+</section>
+
+<section class="viewer-card">
+
+<canvas
+id="canvas">
+</canvas>
+
+</section>
+
+<section class="action-card">
+
+<button
+id="scanBtn"
+class="btn primary">
+
+AUTO SCAN
+
+</button>
+
+<button
+id="saveBtn"
+class="btn">
+
+Save JPEG
+
+</button>
+
+</section>
+
+<section
+id="status"
+class="status">
+
+Ready
+
+</section>
+
+</main>
+
+<footer>
+
+KliseApp © 2026
+
+</footer>
+
+</div>
+
+<script src="js/viewer.js"></script>
+<script src="js/film-engine.js"></script>
+<script src="js/export.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+
+</html>
