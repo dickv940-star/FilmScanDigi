@@ -7,6 +7,7 @@
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
+
   "background_color": "#111111",
   "theme_color": "#111111",
 
@@ -30,12 +31,11 @@
     "graphics"
   ],
 
-  "screenshots": [
+  "shortcuts": [
     {
-      "src": "assets/screenshot.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide"
+      "name": "Scan Film",
+      "short_name": "Scan",
+      "url": "./"
     }
   ]
 }
