@@ -2,62 +2,109 @@
 =========================================================
 KliseApp
 Application Controller
-Version 3.0
+Version 3.1
 =========================================================
 */
 
 "use strict";
 
+
 class KliseApp {
+
 
     constructor() {
 
+
         console.log("KliseApp Started");
 
-        // Canvas
+
+        // =========================
+        // CANVAS
+        // =========================
+
         this.canvas =
             document.getElementById("viewer");
+
+
+        if(!this.canvas){
+
+            console.error(
+                "Canvas #viewer tidak ditemukan"
+            );
+
+            return;
+
+        }
+
 
         this.ctx =
             this.canvas.getContext("2d");
 
-        // Input
+
+
+        // =========================
+        // INPUT
+        // =========================
+
         this.fileInput =
             document.getElementById("fileInput");
 
-        // Buttons
+
+
+        // =========================
+        // BUTTON
+        // =========================
+
+        this.uploadBtn =
+            document.getElementById("uploadBtn");
+
+
         this.btnProcess =
-            document.getElementById("btnProcess");
+            document.getElementById("scanBtn");
 
-        this.btnReset =
-            document.getElementById("btnReset");
 
-        this.btnJPEG =
-            document.getElementById("btnJPEG");
+        this.btnSave =
+            document.getElementById("saveBtn");
 
-        this.btnPNG =
-            document.getElementById("btnPNG");
 
-        this.btnWEBP =
-            document.getElementById("btnWEBP");
 
-        // Engine
+        // =========================
+        // ENGINE
+        // =========================
+
 
         this.viewer =
-            new Viewer(this.canvas);
+            new Viewer(
+                this.canvas
+            );
+
+
+        this.engine =
+            null;
+
 
         this.exporter =
-            new ExportEngine(this.canvas);
+            new ExportEngine(
+                this.canvas
+            );
 
-        this.engine = null;
 
-        this.currentFile = null;
+        this.currentFile =
+            null;
+
+
 
         this.bindEvents();
 
-        this.viewer.attachEvents();
+
+        console.log(
+            "KliseApp Ready"
+        );
+
 
     }
+
+
 
     /*
     ======================================
@@ -65,15 +112,38 @@ class KliseApp {
     ======================================
     */
 
-    bindEvents() {
 
-        this.fileInput.addEventListener(
+    bindEvents(){
+
+
+
+        // Upload
+
+        this.uploadBtn?.addEventListener(
+
+            "click",
+
+            ()=>{
+
+                this.fileInput.click();
+
+            }
+
+        );
+
+
+
+
+        this.fileInput?.addEventListener(
 
             "change",
 
             (e)=>{
 
-                if(e.target.files.length){
+
+                if(
+                    e.target.files.length
+                ){
 
                     this.openFile(
 
@@ -83,9 +153,16 @@ class KliseApp {
 
                 }
 
+
             }
 
         );
+
+
+
+
+        // AUTO SCAN
+
 
         this.btnProcess?.addEventListener(
 
@@ -99,55 +176,34 @@ class KliseApp {
 
         );
 
-        this.btnReset?.addEventListener(
+
+
+
+        // SAVE JPEG
+
+
+        this.btnSave?.addEventListener(
 
             "click",
 
             ()=>{
 
-                this.reset();
+
+                this.exporter.export(
+                    "jpeg"
+                );
+
 
             }
 
         );
 
-        this.btnJPEG?.addEventListener(
 
-            "click",
-
-            ()=>{
-
-                this.exporter.export("jpeg");
-
-            }
-
-        );
-
-        this.btnPNG?.addEventListener(
-
-            "click",
-
-            ()=>{
-
-                this.exporter.export("png");
-
-            }
-
-        );
-
-        this.btnWEBP?.addEventListener(
-
-            "click",
-
-            ()=>{
-
-                this.exporter.export("webp");
-
-            }
-
-        );
 
     }
+
+
+
 
     /*
     ======================================
@@ -155,21 +211,35 @@ class KliseApp {
     ======================================
     */
 
+
     async openFile(file){
 
-        this.currentFile = file;
 
-        await this.viewer.load(file);
+        this.currentFile =
+            file;
+
+
+
+        await this.viewer.load(
+
+            file
+
+        );
+
+
 
         console.log(
 
-            "Loaded",
-
+            "Loaded:",
             file.name
 
         );
 
+
     }
+
+
+
 
     /*
     ======================================
@@ -177,15 +247,24 @@ class KliseApp {
     ======================================
     */
 
+
     processImage(){
 
-        if(!this.viewer.image){
 
-            alert("Pilih foto terlebih dahulu.");
+
+        if(
+            !this.viewer.image
+        ){
+
+            alert(
+                "Upload negative terlebih dahulu."
+            );
 
             return;
 
         }
+
+
 
         this.engine =
 
@@ -197,31 +276,43 @@ class KliseApp {
 
             );
 
+
+
         this.engine.process();
 
+
+
         console.log(
-
-            this.engine.getStatistics()
-
+            "Scan Complete"
         );
+
+
 
     }
 
-    
 
-       /*
+
+
+
+    /*
     ======================================
     RESET
     ======================================
     */
 
+
     reset(){
 
-        if(!this.currentFile){
+
+        if(
+            !this.currentFile
+        ){
 
             return;
 
         }
+
+
 
         this.openFile(
 
@@ -229,9 +320,14 @@ class KliseApp {
 
         );
 
+
     }
 
+
+
 }
+
+
 
 
 /*
@@ -240,13 +336,17 @@ START
 ==========================================
 */
 
+
 window.addEventListener(
 
     "load",
 
     ()=>{
 
-        window.app = new KliseApp();
+
+        window.app =
+            new KliseApp();
+
 
     }
 
